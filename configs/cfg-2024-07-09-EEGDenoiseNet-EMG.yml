@@ -1,0 +1,60 @@
+data_param:
+    dataset_type: 'EEGDenoiseNet'
+    noise_type: 'EMG'
+    data_shape: [1, 1024]
+    num_workers: 1
+    ratio_of_dataset: '8:1:1'
+    save_metric: False 
+    save_eval_result: False 
+    save_ablation_result: False 
+    save_qualitative_result: True 
+
+model_name: 'proposed'
+model_param:
+    use_tensorboard: False
+    proposed: 
+        encoder:
+            kernel_size: 30
+            encoder_dim: 256
+        separator:
+            K: 30 #20
+            stack_num: 4
+            layer_num_local: 6 #6
+            layer_num_global: 3
+            norm: 'ln'
+            feature_dim: 256
+            hidden_dim: 256
+            kernel_size: 3
+            dropout_rate: 0.2
+        decoder:
+            None
+
+training:
+    n_epochs: 20000
+    validation_freq_in_epoch: 1
+    patience: 20
+    batch_size: 128
+    valid_size: 128
+    eval_size: 128
+
+evaluation:
+    model_path: /z3/home/xai_test/wch/paper_related/03-EEG_DENOISE/checkpoints/(cfg-2024-07-09-EEGDenoiseNet-EMG)-(EMG)-(proposed)/checkpoint-EMG-(2024-07-25-07-26-06).pth
+
+optim_param:
+    weight_decay: 0.000
+    optimizer: "Adam"
+    loss: 
+        name: 'mse' #'mse, lncosh'
+        mse:
+            weight: 5 #10
+        lncosh:
+            lamda: 0.1
+            weight: 10
+    lr: 0.0003
+    amsgrad: False
+    eps: 0.00000001
+
+device: 'cuda'
+gpu_ids: '0' 
+mode: 'eval'
+

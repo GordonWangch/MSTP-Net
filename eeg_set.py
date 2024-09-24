@@ -119,6 +119,7 @@ class EEGSET(torch.utils.data.Dataset):
 		return dataset
 
 
+# SS2016
 class EEGSET_SEMI(torch.utils.data.Dataset):
 
 	def __init__(
@@ -189,7 +190,6 @@ def get_datasets(
 	ratio = [int(r) for r in ratio_of_dataset.split(':')]
 
 	if dataset_type == 'EEGDenoiseNet':
-		# EEGDenoiseNet dataset
 		signal, noise = _load_from_npy(dataset_type, noise_type, data_dir)
 		train_eeg, train_noise, val_eeg, val_noise, test_eeg, test_noise = _signal_preproc_denoisenet(
 			signal, noise, combine_num, ratio)
@@ -198,7 +198,12 @@ def get_datasets(
 		validset = EEGSET(val_eeg, val_noise, noise_type, dataset_names[1], data_dir)
 		testset = EEGSET(test_eeg, test_noise, noise_type, dataset_names[2], data_dir)
 	else:
-		# EEGDiR SS2016 dataset
+		# eeg, noise_eeg = _load_from_npy(dataset_type, noise_type, data_dir)
+
+		# train_eeg, train_noise_eeg, val_eeg, val_noise_eeg, test_eeg, test_noise_eeg = _signal_preproc_semi_simulated(
+		# 	eeg, noise_eeg, ratio)
+		
+		# EEGDiR semi
 		train_noise_eeg, train_eeg, val_noise_eeg, val_eeg, test_noise_eeg, test_eeg = _get_semi_data_from_eegdir(data_dir)
 
 		trainset = EEGSET_SEMI(train_eeg, train_noise_eeg, dataset_type, noise_type, dataset_names[0], data_dir)	
@@ -246,6 +251,7 @@ def _load_from_npy(dataset_type, noise_type, data_dir):
 			np.save(noise_all_path, noise_all)
 
 		return EEG_all, noise_all
+
 	else:
 		noise_data = np.load(os.path.join(data_dir, 'signal_Semi-simulated EOG.npy'), allow_pickle=True)
 		clean_data = np.load(os.path.join(data_dir, 'reference_Semi-simulated EOG.npy'), allow_pickle=True)
@@ -284,10 +290,6 @@ def _random_signal(signal, combin_num):
 	random_result  = np.array(random_result).reshape(-1, signal.shape[-1])
 
 	return  random_result
-
-
-def _get_rms(records):
-	return math.sqrt(sum([x ** 2 for x in records]) / len(records))
 
 
 def _signal_preproc_denoisenet(EEG_data, noise_data, combin_num, ratio=[8, 1, 1]):

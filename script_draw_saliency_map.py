@@ -8,12 +8,12 @@ import torch
 import argparse
 import yaml
 
-from models.proposed_net import Dual_Tas_Model
-from models.proposed_net_dilate_1 import Dual_Tas_Model_dilated
-from models.proposed_net_all_local import Dual_Tas_Model_all_local
-from models.proposed_net_all_global import Dual_Tas_Model_all_global
-from models.proposed_net_nonalternation import Dual_Tas_Model_nonalternation
-from models.proposed_net_nonalternation_global_first import Dual_Tas_Model_nonalternation_global_first
+from models.proposed_net import MSTP_Model
+from models.proposed_net_dilate_1 import MSTP_Model_dilated
+from models.proposed_net_all_local import MSTP_Model_all_local
+from models.proposed_net_all_global import MSTP_Model_all_global
+from models.proposed_net_nonalternation import MSTP_Model_nonalternation
+from models.proposed_net_nonalternation_global_first import MSTP_Model_nonalternation_global_first
 from torchinfo import summary
 from datetime import datetime
 from tqdm import tqdm
@@ -138,17 +138,17 @@ def get_grad_and_use_ratio(configs, model_name, use_ratio_thres):
   device = configs.device
 
   if model_name == 'proposed':
-    model = Dual_Tas_Model(configs.model_param.proposed).to(device)
+    model = MSTP_Model(configs.model_param.proposed).to(device)
   elif model_name == 'proposed_dilated_1':
-    model = Dual_Tas_Model_dilated(configs.model_param.proposed_dilated_1).to(device)
+    model = MSTP_Model_dilated(configs.model_param.proposed_dilated_1).to(device)
   elif model_name == 'proposed_all_local':
-    model = Dual_Tas_Model_all_local(configs.model_param.proposed_all_local).to(device)
+    model = MSTP_Model_all_local(configs.model_param.proposed_all_local).to(device)
   elif model_name == 'proposed_all_global':
-    model = Dual_Tas_Model_all_global(configs.model_param.proposed_all_global).to(device)
+    model = MSTP_Model_all_global(configs.model_param.proposed_all_global).to(device)
   elif model_name == 'proposed_nonalternation':
-    model = Dual_Tas_Model_nonalternation(configs.model_param.proposed_nonalternation).to(device)
+    model = MSTP_Model_nonalternation(configs.model_param.proposed_nonalternation).to(device)
   elif model_name == 'proposed_nonalternation_global_first':
-    model = Dual_Tas_Model_nonalternation_global_first(configs.model_param.proposed_nonalternation_global_first).to(device)
+    model = MSTP_Model_nonalternation_global_first(configs.model_param.proposed_nonalternation_global_first).to(device)
   else:
     raise ValueError(f'[*] Invalid model name: {configs.model_name}')
 
@@ -193,9 +193,9 @@ def get_grad_and_use_ratio(configs, model_name, use_ratio_thres):
       modules[f'Inter_{l + 1}'] = tcn_global
       tcn_global.register_forward_hook(forward_hook)
 
-  mask = model.module.separation
-  mask.register_forward_hook(forward_hook)
-  modules['mask'] = mask
+  # mask = model.module.separation
+  # mask.register_forward_hook(forward_hook)
+  # modules['mask'] = mask
 
   # Forward pass
   optimizer = torch.optim.Adam(model.parameters(), lr=0.0003)
@@ -232,71 +232,79 @@ def get_grad_and_use_ratio(configs, model_name, use_ratio_thres):
   return grad_dict, use_ratio
 
 
-def draw_saliency_map(grad_dict, figsize, title_dict):
-  cmap = ['magma', 'viridis'][1]
+def draw_saliency_map(grad_dict, figsize, title_dict, block_sequence_dict):
+  cmap = ['magma', 'viridis'][0]
   # norm = PowerNorm(gamma=0.45) # 0.45
   fig = plt.figure(figsize=figsize)
 
-  gs = GridSpec(3, 3, height_ratios=[1, 1, 0.05])
+  gs = GridSpec(4, 2, height_ratios=[1, 1, 1, 0.05])
 
-  axes = [plt.subplot(gs[i, j]) for i in range(2) for j in range(3)]
+  axes = [plt.subplot(gs[i, j]) for i in range(3) for j in range(2)]
 
   for i, (ax, model_name) in enumerate(zip(axes, grad_dict)):
     data = np.vstack(list(grad_dict[model_name].values()))
     cax = sns.heatmap(data, ax=ax, cmap=cmap, cbar=False)
 
     ax.set_xticks([])
-    ax.set_yticks([])
+    yticks_positions = [i + 0.5 for i in range(data.shape[0])]
+    ax.set_yticks(yticks_positions)  
+    ax.set_yticklabels(block_sequence_dict[model_name], rotation=0)
     ax.set_title(f'{title_dict[model_name]}')  
+
 
   cbar_ax = fig.add_axes([0.15, 0.05, 0.7, 0.02])
   cbar = fig.colorbar(cax.get_children()[0], cax=cbar_ax, orientation='horizontal')
 
   plt.tight_layout()
-  plt.show()
+  # plt.show()
 
-  # source_dir = os.path.dirname(os.path.abspath(__file__))
-  # save_dir = os.path.join(source_dir, 'figures')
-  # plt.savefig(os.path.join(save_dir, f'saliency_map_all.svg'), bbox_inches='tight')
+  source_dir = os.path.dirname(os.path.abspath(__file__))
+  save_dir = os.path.join(source_dir, 'figures')
+  plt.savefig(os.path.join(save_dir, f'saliency_map_all.svg'), bbox_inches='tight')
 
 
-def draw_decision_dependence(use_ratio_dict, figsize, title_dict):
+def draw_receptive_field_estimation(use_ratio_dict, figsize, title_dict):
     marker_list = ['o', 's', 'D', '^', 'h', 'p']
     line_styles = ['-', '--', '-.', ':']         
-    colors = sns.color_palette("tab10", len(use_ratio_dict))  
+
+    colors = [
+      (38, 70, 83),
+      (42, 157, 142),
+      (233, 196, 107),
+      (243, 162, 97),
+      (230, 111, 81),
+      (183, 181, 160),
+      (131, 64, 38),
+      (75, 116, 178),
+    ]
+    colors = [tuple(val / 255.0 for val in color) for color in colors]
     line_alpha = 0.8
     background_alpha = 0.2
     block_num = 6
     point_num = 512
     x = range(block_num)
 
-    plt.figure(figsize=figsize)
+    fig = plt.figure(figsize=figsize)
     
     for i, (model_name, color) in enumerate(zip(use_ratio_dict, colors)):
       y = [i / point_num for i in use_ratio_dict[model_name][:block_num]]
       area = np.trapz(y, x) / block_num
       line, = plt.plot(
-        x, y, label=f'{title_dict[model_name]} (Area = {area:.4f})', 
+        x, y, label=f'{title_dict[model_name]} (AUC = {area:.4f})', 
         marker=marker_list[i % len(marker_list)], 
         linestyle=line_styles[i % len(line_styles)], 
         alpha=line_alpha, 
-        color=color
+        color=color,
+        markersize=8,
         )
 
-      plt.fill_between(x, y, alpha=background_alpha, color=line.get_color())
-
-    plt.legend(loc='best', fontsize=10, frameon=False)
-    plt.xticks(ticks=x, labels=[f'Block {i + 1}' for i in x], fontsize=10)
-    plt.yticks(fontsize=10)
+    plt.legend(loc='lower center', bbox_to_anchor=(0.5, -0.40), ncol=2, fontsize=20, frameon=False)
+    plt.xticks(ticks=x, labels=[f'Block {i + 1}' for i in x], fontsize=18)
+    plt.yticks(fontsize=18)
+    plt.ylabel('Receptive Field Estimation $\gamma$', fontsize=20)
     
-    plt.grid(True, linestyle='--', alpha=0.5)  
+    plt.grid(True, linestyle='--', alpha=0.2)  
     
-    plt.gca().spines['top'].set_visible(False)
-    plt.gca().spines['right'].set_visible(False)
-    plt.gca().spines['bottom'].set_visible(False)
-    plt.gca().spines['left'].set_visible(False)
-    plt.gca().set_facecolor('#f7f7f7')  
-
     plt.tight_layout()
     plt.show()
 
@@ -307,6 +315,7 @@ def draw_decision_dependence(use_ratio_dict, figsize, title_dict):
 
 def main():
   configs = parse_arguments()
+  
   model_ckpts = [
     r'/z3/home/xai_test/wch/paper_related/03-EEG_DENOISE/checkpoints/(cfg-2024-07-09-EEGDenoiseNet-EOG)-(EOG)-(proposed)/checkpoint-EOG-(2024-07-17-15-31-50).pth',
     r'/z3/home/xai_test/wch/paper_related/03-EEG_DENOISE/checkpoints/(cfg-2024-07-09-EEGDenoiseNet-EOG)-(EOG)-(proposed_all_local)/checkpoint-EOG-(2024-07-16-15-11-26).pth',
@@ -315,14 +324,34 @@ def main():
     r'/z3/home/xai_test/wch/paper_related/03-EEG_DENOISE/checkpoints/(cfg-2024-07-09-EEGDenoiseNet-EOG)-(EOG)-(proposed_nonalternation)/checkpoint-EOG-(2024-07-17-11-12-37).pth',
     r'/z3/home/xai_test/wch/paper_related/03-EEG_DENOISE/checkpoints/(cfg-2024-07-09-EEGDenoiseNet-EOG)-(EOG)-(proposed_nonalternation_global_first)/checkpoint-EOG-(2024-07-17-12-52-02).pth',
   ]
-  title_dict = {
-    'proposed': 'Proposed',
+  
+  title_dict_saliency_map = {
+    'proposed': 'MSTP-Net (Proposed, Dilation factor: exponential growth)',
+    'proposed_all_local': 'Variant Model A (Dilation factor: exponential growth)',
+    'proposed_all_global': 'Variant Model B (Dilation factor: exponential growth)',
+    'proposed_dilated_1': 'Variant Model C (Dilation factor: 1)',
+    'proposed_nonalternation': 'Variant Model D (Dilation factor: exponential growth)',
+    'proposed_nonalternation_global_first': 'Variant Model E (Dilation factor: exponential growth)',
+  }
+  
+  title_dict_decision_dependence = {
+    'proposed': 'MSTP-Net (Proposed)',
     'proposed_all_local': 'Variant Model A',
     'proposed_all_global': 'Variant Model B',
     'proposed_dilated_1': 'Variant Model C',
     'proposed_nonalternation': 'Variant Model D',
     'proposed_nonalternation_global_first': 'Variant Model E',
   }
+  
+  block_sequence_dict = {
+    'proposed': ['Intra', 'Inter', 'Intra', 'Inter', 'Intra', 'Inter'],
+    'proposed_all_local': ['Intra', 'Intra', 'Intra', 'Intra', 'Intra', 'Intra'],
+    'proposed_all_global': ['Inter', 'Inter', 'Inter', 'Inter', 'Inter', 'Inter'],
+    'proposed_dilated_1': ['Intra', 'Inter', 'Intra', 'Inter', 'Intra', 'Inter'],
+    'proposed_nonalternation': ['Intra', 'Intra', 'Intra', 'Inter', 'Inter', 'Inter'], 
+    'proposed_nonalternation_global_first': ['Inter', 'Inter', 'Inter', 'Intra', 'Intra', 'Intra']
+  }
+  
   configs.model = 'eval'
 
   figsize = (14, 8)
@@ -338,8 +367,8 @@ def main():
     grad_dict[model_name], use_ratio_dict[model_name] = get_grad_and_use_ratio(
       configs, model_name, use_ratio_thres)
     
-  draw_saliency_map(grad_dict, figsize, title_dict)
-  draw_decision_dependence(use_ratio_dict, figsize, title_dict)
+  # draw_saliency_map(grad_dict, figsize, title_dict_saliency_map, block_sequence_dict)
+  draw_receptive_field_estimation(use_ratio_dict, figsize, title_dict_decision_dependence)
 
 
 

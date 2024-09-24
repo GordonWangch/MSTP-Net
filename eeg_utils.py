@@ -232,7 +232,6 @@ class Trainer:
         break
 
 
-
 class Evaluator:
   def __init__(self, configs):
     self.configs = configs
@@ -355,6 +354,18 @@ class Evaluator:
     contaminate_list = np.concatenate(contaminate_list, axis=0)
     snr_db_list = np.concatenate(snr_db_list, axis=0)
 
+    # for index in range(10):
+    #   visualization(
+    #     np.squeeze(clean_list[index]), 
+    #     np.squeeze(pred_list[index]), 
+    #     np.squeeze(contaminate_list[index]),
+    #     512,
+    #     rrmse_temporal_list[index], 
+    #     rrmse_spectrum_list[index], 
+    #     cc_list[index],
+    #     snr_list[index],
+    #     snr_db_list[index],
+    #     )
     if 'Semi' in self.configs.data_param.noise_type:
       eval_result_save_path = os.path.join(self.configs.task_dir, 'eval_result', f'{self.configs.data_param.noise_type} {self.configs.model_name}.npy')
       if self.configs.data_param.save_eval_result: np.save(eval_result_save_path, metric_dict)
@@ -484,7 +495,6 @@ class Evaluator:
     np.save(save_path, results)
 
 
-
 class EarlyStopping:
   def __init__(
     self, 
@@ -542,6 +552,39 @@ class EarlyStopping:
     ckpt_path = os.path.join(self.ckpt_dir, self.ckpt_name)
     torch.save(model.state_dict(), ckpt_path)
     print('[INFO] Model have saved to', ckpt_path)
+
+
+class Viewer:
+  def __init__(self, gt, pred, fs):
+    self.gt = gt
+    self.pred = pred
+  
+    self.fs = fs
+
+
+  def visualization(self):
+    plt.figure(figsize=(20, 10))
+    plt.plot(self.gt, label='GT')
+    plt.plot(self.pred, label='Pred')
+    plt.legend()
+    plt.show()
+
+
+def visualization(clean, pred, contaminate, fs, rrmse_temporal, rrmse_spectrum, cc, snr, snr_db):
+  contaminate = contaminate + 9
+  fig, ax = plt.subplots(1, 1, figsize=(20, 10))
+
+  x = np.arange(len(clean)) / fs
+
+  ax.plot(x, clean, label='Clean Signal', color='blue')
+  ax.plot(x, pred, label='Prediction', color='red')
+  ax.plot(x, contaminate, label='Contaminate Signal', color='green')
+
+  title = f'RRMSE Temporal: {rrmse_temporal:.4f} | RRMSE Spectrum: {rrmse_spectrum:.4f} | CC: {cc:.4f} | SNR: {snr: .4f} | noise_SNR: {snr_db:.4f} dB'
+  ax.set_title(title)
+
+  ax.legend()
+  plt.show()
 
 
 def Stepbar(mode, loader, ascii='->='):

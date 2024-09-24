@@ -15,12 +15,12 @@ from torch.utils.data import DataLoader
 from torchinfo import summary
 from datetime import datetime
 from eeg_set import get_datasets, EEGSET
-from models.proposed_net import Dual_Tas_Model
-from models.proposed_net_dilate_1 import Dual_Tas_Model_dilated
-from models.proposed_net_all_local import Dual_Tas_Model_all_local
-from models.proposed_net_all_global import Dual_Tas_Model_all_global
-from models.proposed_net_nonalternation import Dual_Tas_Model_nonalternation
-from models.proposed_net_nonalternation_global_first import Dual_Tas_Model_nonalternation_global_first
+from models.proposed_net import MSTP_Model
+from models.proposed_net_dilate_1 import MSTP_Model_dilated
+from models.proposed_net_all_local import MSTP_Model_all_local
+from models.proposed_net_all_global import MSTP_Model_all_global
+from models.proposed_net_nonalternation import MSTP_Model_nonalternation
+from models.proposed_net_nonalternation_global_first import MSTP_Model_nonalternation_global_first
 from eeg_utils import Trainer, Evaluator
 from tqdm import tqdm
 # from torch.utils.tensorboard import SummaryWriter
@@ -65,7 +65,7 @@ def parse_arguments():
   parser.add_argument(
     '-mn', '--model_name_bp', type=str, 
     default=None, 
-    choices=['proposed', 'tasnet', 'proposed_dilated_1', 'proposed_all_local', 'proposed_all_global', 'proposed_without_global', 'proposed_nonalternation', 'proposed_nonalternation_global_first'],
+    choices=['proposed', 'proposed_dilated_1', 'proposed_all_local', 'proposed_all_global', 'proposed_nonalternation', 'proposed_nonalternation_global_first'],
   )
 
   args = vars(parser.parse_args())
@@ -123,17 +123,17 @@ def main():
   #                      02.Model
   # ================================================================== #
   if configs.model_name == 'proposed':
-    model = Dual_Tas_Model(configs.model_param.proposed).to(device)
+    model = MSTP_Model(configs.model_param.proposed).to(device)
   elif configs.model_name == 'proposed_dilated_1':
-    model = Dual_Tas_Model_dilated(configs.model_param.proposed_dilated_1).to(device)
+    model = MSTP_Model_dilated(configs.model_param.proposed_dilated_1).to(device)
   elif configs.model_name == 'proposed_all_local':
-    model = Dual_Tas_Model_all_local(configs.model_param.proposed_all_local).to(device)
+    model = MSTP_Model_all_local(configs.model_param.proposed_all_local).to(device)
   elif configs.model_name == 'proposed_all_global':
-    model = Dual_Tas_Model_all_global(configs.model_param.proposed_all_global).to(device)
+    model = MSTP_Model_all_global(configs.model_param.proposed_all_global).to(device)
   elif configs.model_name == 'proposed_nonalternation':
-    model = Dual_Tas_Model_nonalternation(configs.model_param.proposed_nonalternation).to(device)
+    model = MSTP_Model_nonalternation(configs.model_param.proposed_nonalternation).to(device)
   elif configs.model_name == 'proposed_nonalternation_global_first':
-    model = Dual_Tas_Model_nonalternation_global_first(configs.model_param.proposed_nonalternation_global_first).to(device)
+    model = MSTP_Model_nonalternation_global_first(configs.model_param.proposed_nonalternation_global_first).to(device)
   else:
     raise ValueError(f'[*] Invalid model name: {configs.model_name}')
 
@@ -218,6 +218,7 @@ def main():
       evaluators.evaluate()
       if isinstance(test_set, EEGSET):
         evaluators.inference()
+
 
 
 if __name__ == '__main__':

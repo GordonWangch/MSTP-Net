@@ -253,7 +253,6 @@ def select_norm(norm, dim, shape):
 
 class Encoder(nn.Module):
   '''
-    Conv-Tasnet Encoder part
     kernel_size: the length of filters
     out_channels: the number of filters
     stride: the length of stride
@@ -281,13 +280,6 @@ class Encoder(nn.Module):
 
 
 class Decoder(nn.ConvTranspose1d):
-  '''
-    Decoder of the TasNet
-    This module can be seen as the gradient of Conv1d with respect to its input. 
-    It is also known as a fractionally-strided convolution 
-    or a deconvolution (although it is not an actual deconvolution operation).
-  '''
-
   def __init__(self, *args, **kwargs):
     super(Decoder, self).__init__(*args, **kwargs)
 
@@ -308,9 +300,9 @@ class Decoder(nn.ConvTranspose1d):
     return x
 
 
-class Dual_Tas_Block_local(nn.Module):
+class Intra_Block(nn.Module):
   def __init__(self, configs):
-    super(Dual_Tas_Block_local, self).__init__()
+    super(Intra_Block, self).__init__()
 
     self.configs = configs
 
@@ -357,9 +349,9 @@ class Dual_Tas_Block_local(nn.Module):
     return intra
 
 
-class Dual_Tas_Block_global(nn.Module):
+class Inter_Block(nn.Module):
   def __init__(self, configs):
-    super(Dual_Tas_Block_global, self).__init__()
+    super(Inter_Block, self).__init__()
 
     self.configs = configs
 
@@ -406,9 +398,9 @@ class Dual_Tas_Block_global(nn.Module):
     return out
 
 
-class Dual_Path_Tas(nn.Module):
+class Mask_Generator(nn.Module):
   def __init__(self, configs):
-    super(Dual_Path_Tas, self).__init__()
+    super(Mask_Generator, self).__init__()
     self.configs = configs
 
     self.in_channels = configs.encoder.encoder_dim 
@@ -428,9 +420,9 @@ class Dual_Path_Tas(nn.Module):
     self.dual_tas_local = nn.ModuleList([])
     self.dual_tas_global = nn.ModuleList([])
     for _ in range(self.stack_num):
-      self.dual_tas_local.append(Dual_Tas_Block_local(self.configs))
+      self.dual_tas_local.append(Intra_Block(self.configs))
     for _ in range(self.stack_num):
-      self.dual_tas_global.append(Dual_Tas_Block_global(self.configs))
+      self.dual_tas_global.append(Inter_Block(self.configs))
 
     self.conv2d = nn.Conv2d(self.feature_dim, self.feature_dim, kernel_size=1)
     self.end_conv1x1 = nn.Conv1d(self.feature_dim, self.in_channels, 1, bias=False)
@@ -541,9 +533,9 @@ class Dual_Path_Tas(nn.Module):
     return x
 
 
-class Dual_Tas_Model_nonalternation_global_first(nn.Module):
+class MSTP_Model_nonalternation_global_first(nn.Module):
   def __init__(self, config):
-    super(Dual_Tas_Model_nonalternation_global_first,self).__init__()
+    super(MSTP_Model_nonalternation_global_first,self).__init__()
     self.config = config
 
     # Encoder
@@ -558,7 +550,7 @@ class Dual_Tas_Model_nonalternation_global_first(nn.Module):
       )
 
     # Separation
-    self.separation = Dual_Path_Tas(self.config)
+    self.separation = Mask_Generator(self.config)
 
     # Decoder 
     self.decoder_dim = self.encoder_dim
@@ -617,8 +609,6 @@ class Dual_Tas_Model_nonalternation_global_first(nn.Module):
 
 
 if __name__ == "__main__":
-  rnn = Dual_Tas_Model_nonalternation_global_first(256, 64, 128, bidirectional=True, norm='ln', num_layers=6)
-  from torchinfo import summary
-  summary(rnn, input_size=(2, 1, 1024), depth=6, col_width=20, col_names=("input_size", "output_size", "num_params"), device='cuda')
+  pass
 
 

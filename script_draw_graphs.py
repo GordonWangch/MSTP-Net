@@ -2,10 +2,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import re
+import seaborn as sns
+import pandas as pd
 
 from copy import copy, deepcopy
 from scipy import signal
-
+from scipy.stats import spearmanr, kendalltau
 
 
 
@@ -34,7 +36,7 @@ def draw_snr_db(metric_dict, snr_db_list, figure_size, networks, noise_type):
 
     linewidth = 2 if net == networks[0] else 1
 
-    if net == 'proposed': net = 'DPCD-Net (proposed)'
+    if net == 'proposed': net = 'MSTP-Net (proposed)'
 
     ax[0].plot(snr_db_list, rrmse_temporal_list, label=net, color=colors[idx], linewidth=linewidth, marker=marker, alpha=alpha)
     ax[1].plot(snr_db_list, rrmse_spectrum_list, label=net, color=colors[idx], linewidth=linewidth, marker=marker, alpha=alpha)
@@ -47,19 +49,33 @@ def draw_snr_db(metric_dict, snr_db_list, figure_size, networks, noise_type):
   ax[2].set_title('CC')
   ax[3].set_title('SNR')
   
-  if noise_type == 'EMG_EOG': 
-    handles, labels = ax[0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc='lower center', ncol=len(networks))
+  # if noise_type == 'EMG_EOG': 
+  #   handles, labels = ax[0].get_legend_handles_labels()
+  #   fig.legend(handles, labels, loc='lower center', ncol=len(networks))
 
   # if noise_type == 'EMG_EOG': noise_type = 'EMG+EOG'
   # fig.suptitle(f'Noise Type: {noise_type}')
-  plt.tight_layout(rect=[0, 0.1, 1, 0.9])
+  # plt.tight_layout(rect=[0, 0.1, 1, 0.9])
+  plt.tight_layout()
 
   # plt.show()
 
   source_dir = os.path.dirname(os.path.abspath(__file__))
   save_dir = os.path.join(source_dir, 'figures')
   plt.savefig(os.path.join(save_dir, f'comparation_{noise_type}.svg'), bbox_inches='tight')
+
+  if not os.path.exists(os.path.join(save_dir, 'comparation_legend.svg')):
+    legend = plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=len(networks), frameon=False)
+    plt.tight_layout(rect=[0, 0.1, 1, 1])
+
+    plt.xticks([])
+    plt.yticks([])
+
+    fig_legend = plt.figure(figsize=(8, 1))
+    ax_legend = fig_legend.add_subplot(111)
+    fig_legend.legend(*legend.axes.get_legend_handles_labels(), loc='center', ncol=len(networks))
+    ax_legend.axis('off')
+    plt.savefig(os.path.join(save_dir, 'comparation_legend.svg'), format='svg', bbox_inches='tight')
 
 
 def draw_snr_db_ablation(metric_dict, snr_db_list, figure_size, networks, noise_type):
@@ -87,7 +103,7 @@ def draw_snr_db_ablation(metric_dict, snr_db_list, figure_size, networks, noise_
 
     linewidth = 2 if net == networks[0] else 1
 
-    if net == 'proposed': net = 'DPCD-Net (proposed)'
+    if net == 'proposed': net = 'MSTP-Net (proposed)'
     elif net == 'proposed_all_local': net = 'Variant Model A'
     elif net == 'proposed_all_global': net = 'Variant Model B'
     elif net == 'proposed_dilated_1': net = 'Variant Model C'
@@ -105,18 +121,26 @@ def draw_snr_db_ablation(metric_dict, snr_db_list, figure_size, networks, noise_
   ax[2].set_title('CC')
   ax[3].set_title('SNR')
   
-  handles, labels = ax[0].get_legend_handles_labels()
-  fig.legend(handles, labels, loc='lower center', ncol=len(networks))
+  # handles, labels = ax[0].get_legend_handles_labels()
+  # fig.legend(handles, labels, loc='lower center', ncol=len(networks))
 
-  # if noise_type == 'EMG_EOG': noise_type = 'EMG+EOG'
-  # fig.suptitle(f'Noise Type: {noise_type}')
-  plt.tight_layout(rect=[0, 0.1, 1, 0.9])
-
+  # plt.tight_layout(rect=[0, 0.1, 1, 0.9])
+  plt.tight_layout()
   # plt.show()
 
   source_dir = os.path.dirname(os.path.abspath(__file__))
   save_dir = os.path.join(source_dir, 'figures')
   plt.savefig(os.path.join(save_dir, f'ablation_{noise_type}.svg'), bbox_inches='tight')
+
+  if not os.path.exists(os.path.join(save_dir, 'ablation_legend.svg')):
+    legend = plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=len(networks), frameon=False)
+    plt.tight_layout(rect=[0, 0.1, 1, 1])
+
+    fig_legend = plt.figure(figsize=(8, 1))
+    ax_legend = fig_legend.add_subplot(111)
+    fig_legend.legend(*legend.axes.get_legend_handles_labels(), loc='center', ncol=len(networks))
+    ax_legend.axis('off')
+    plt.savefig(os.path.join(save_dir, 'ablation_legend.svg'), format='svg', bbox_inches='tight')
 
 
 def draw_amplitude_and_psd(contaminate_eeg, clean_eeg, pred_eeg, noise_type, network, figsize=(12, 12)):
@@ -126,44 +150,102 @@ def draw_amplitude_and_psd(contaminate_eeg, clean_eeg, pred_eeg, noise_type, net
     f, pxx = signal.welch(data_in, fs, nfft=fft_length, nperseg=fft_length)
     return f, 10*np.log10(pxx) 
 
-  fig, ax = plt.subplots(2, 1, figsize=figsize)
+  # fig, ax = plt.subplots(2, 1, figsize=figsize)
+  figsize = (10, 7.5)
   sample_rate = 512 if noise_type == 'EMG' else 256
   linewidth = 2
 
-  # Amplitude  
+  source_dir = os.path.dirname(os.path.abspath(__file__))
+  save_dir = os.path.join(source_dir, 'figures', '-2dB_separation')
+  if not os.path.exists(save_dir): os.makedirs(save_dir)
+
+  # Amplitude Plot
+  plt.figure(figsize=figsize)
   x = np.arange(0, len(contaminate_eeg) / sample_rate, 1 / sample_rate)
+  plt.plot(x, contaminate_eeg, label='Contaminate EEG', color='gray', alpha=0.2, linewidth=linewidth)
+  plt.plot(x, clean_eeg, label='Clean EEG', color='r', alpha=0.5, linewidth=linewidth)
+  plt.plot(x, pred_eeg, label='Pred EEG', color='b', alpha=0.5, linewidth=linewidth)
 
-  ax[0].plot(x, contaminate_eeg, label='Contaminate EEG', color='gray', alpha=0.2, linewidth=linewidth)
-  ax[0].plot(x, clean_eeg, label='Clean EEG', color='r', alpha=0.5, linewidth=linewidth)
-  ax[0].plot(x, pred_eeg, label='Pred EEG', color='b', alpha=0.5, linewidth=linewidth)
-  # ax[0].set_title('Time Domain (s)')
+  plt.xticks([])
+  plt.yticks([])
+  plt.tight_layout()
+  plt.savefig(os.path.join(save_dir, f'qualitative_temporal_{noise_type}_{network}.svg'), bbox_inches='tight')
+  # plt.show()
 
-  # ax[0].set_ylabel('Time Domain')
-  ax[0].set_xticks([])
-  ax[0].set_yticks([])
-
-  # PSD
+  # PSD Plot
+  plt.figure(figsize=figsize)
   psd_x, psd_contaminate = signal_psd(contaminate_eeg, sample_rate, noise_type)
   psd_x, psd_clean = signal_psd(clean_eeg, sample_rate, noise_type)
   psd_x, psd_pred = signal_psd(pred_eeg, sample_rate, noise_type)
   hz = 80 if noise_type != 'Semi' else 40
   point = hz * 2
+  plt.plot(psd_x[:point], psd_contaminate[:point], label='Contaminate EEG', color='gray', alpha=0.2, linewidth=linewidth)
+  plt.plot(psd_x[:point], psd_clean[:point], label='Clean EEG', color='r', alpha=0.5, linewidth=linewidth)
+  plt.plot(psd_x[:point], psd_pred[:point], label='Pred EEG', color='b', alpha=0.5, linewidth=linewidth)
 
-  ax[1].plot(psd_x[:point], psd_contaminate[:point], label='Contaminate EEG', color='gray', alpha=0.2, linewidth=linewidth)
-  ax[1].plot(psd_x[:point], psd_clean[:point], label='Clean EEG', color='r', alpha=0.5, linewidth=linewidth)
-  ax[1].plot(psd_x[:point], psd_pred[:point], label='Pred EEG', color='b', alpha=0.5, linewidth=linewidth)
-  # ax[1].set_title('Frequency Domain (Hz)')
-
-  # ax[1].set_ylabel('Frequency Domain')
-  ax[1].set_xticks([])
-  ax[1].set_yticks([])
-
-  # fig.suptitle(f'Noise Type: {noise_type} Network: {network}')
+  plt.xticks([])
+  plt.yticks([])
+  plt.tight_layout()
+  plt.savefig(os.path.join(save_dir, f'qualitative_spectrum_{noise_type}_{network}.svg'), bbox_inches='tight')
   # plt.show()
 
-  source_dir = os.path.dirname(os.path.abspath(__file__))
-  save_dir = os.path.join(source_dir, 'figures')
-  plt.savefig(os.path.join(save_dir, f'qualitative_{noise_type}_{network}.svg'), bbox_inches='tight')
+  # Save the legend as a separate SVG file
+  if not os.path.exists(os.path.join(save_dir, 'legend.svg')):
+    plt.figure(figsize=figsize)
+    psd_x, psd_contaminate = signal_psd(contaminate_eeg, sample_rate, noise_type)
+    psd_x, psd_clean = signal_psd(clean_eeg, sample_rate, noise_type)
+    psd_x, psd_pred = signal_psd(pred_eeg, sample_rate, noise_type)
+    hz = 80 if noise_type != 'Semi' else 40
+    point = hz * 2
+    plt.plot(psd_x[:point], psd_contaminate[:point], label='Contaminate EEG', color='gray', alpha=0.2, linewidth=linewidth)
+    plt.plot(psd_x[:point], psd_clean[:point], label='Clean EEG', color='r', alpha=0.5, linewidth=linewidth)
+    plt.plot(psd_x[:point], psd_pred[:point], label='Pred EEG', color='b', alpha=0.5, linewidth=linewidth)
+    legend = plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=3, frameon=False)
+    plt.tight_layout(rect=[0, 0.1, 1, 1])
+
+    plt.xticks([])
+    plt.yticks([])
+
+    fig_legend = plt.figure(figsize=(8, 1))
+    ax_legend = fig_legend.add_subplot(111)
+    fig_legend.legend(*legend.axes.get_legend_handles_labels(), loc='center', ncol=3)
+    ax_legend.axis('off')
+    plt.savefig(os.path.join(save_dir, 'legend.svg'), format='svg', bbox_inches='tight')
+
+  # # Amplitude  
+  # x = np.arange(0, len(contaminate_eeg) / sample_rate, 1 / sample_rate)
+
+  # ax[0].plot(x, contaminate_eeg, label='Contaminate EEG', color='gray', alpha=0.2, linewidth=linewidth)
+  # ax[0].plot(x, clean_eeg, label='Clean EEG', color='r', alpha=0.5, linewidth=linewidth)
+  # ax[0].plot(x, pred_eeg, label='Pred EEG', color='b', alpha=0.5, linewidth=linewidth)
+  # # ax[0].set_title('Time Domain (s)')
+
+  # # ax[0].set_ylabel('Time Domain')
+  # ax[0].set_xticks([])
+  # ax[0].set_yticks([])
+
+  # # PSD
+  # psd_x, psd_contaminate = signal_psd(contaminate_eeg, sample_rate, noise_type)
+  # psd_x, psd_clean = signal_psd(clean_eeg, sample_rate, noise_type)
+  # psd_x, psd_pred = signal_psd(pred_eeg, sample_rate, noise_type)
+  # hz = 80 if noise_type != 'Semi' else 40
+  # point = hz * 2
+
+  # ax[1].plot(psd_x[:point], psd_contaminate[:point], label='Contaminate EEG', color='gray', alpha=0.2, linewidth=linewidth)
+  # ax[1].plot(psd_x[:point], psd_clean[:point], label='Clean EEG', color='r', alpha=0.5, linewidth=linewidth)
+  # ax[1].plot(psd_x[:point], psd_pred[:point], label='Pred EEG', color='b', alpha=0.5, linewidth=linewidth)
+  # # ax[1].set_title('Frequency Domain (Hz)')
+
+  # # ax[1].set_ylabel('Frequency Domain')
+  # ax[1].set_xticks([])
+  # ax[1].set_yticks([])
+
+  # # fig.suptitle(f'Noise Type: {noise_type} Network: {network}')
+  # plt.show()
+
+  # source_dir = os.path.dirname(os.path.abspath(__file__))
+  # save_dir = os.path.join(source_dir, 'figures', '-2dB_separation')
+  # plt.savefig(os.path.join(save_dir, f'qualitative_{noise_type}_{network}.svg'), bbox_inches='tight')
 
 
 def draw_contaminate_and_clean(contaminate, clean, pred):
@@ -392,12 +474,65 @@ def demo_get_average_metric_in_snr():
       np.save(save_path, save_metric_dict)
 
 
+def demo_draw_rank_correlation():
+  data = {
+    # 'RRMSE Temporal': [1, 5, 6, 4, 2, 3],
+    # 'RRMSE Spectrum': [1, 5, 6, 4, 3, 2],
+    'RRMSE_t': [1, 5, 6, 4, 2, 3],
+    'RRMSE_s': [1, 5, 6, 4, 3, 2],
+    'CC': [1, 5, 6, 4, 2, 3],
+    'SNR': [1, 5, 6, 4, 3, 2],
+    'AUC': [1, 5, 6, 4, 2, 3],
+  }
+  title_size = 24
+  label_size = 22
+  annot_size = 20
+  cbar_size = 20
+
+  data = pd.DataFrame(data)
+
+  # spearmanr_corr, _ = spearmanr(data)
+  # kendalltau_corr, _ = kendalltau(data)
+  spearmanr_corr = data.corr(method='spearman') 
+  kendalltau_corr = data.corr(method='kendall')
+
+  mask_spearman = np.triu(np.ones_like(spearmanr_corr, dtype=bool))
+  mask_kendall = np.tril(np.ones_like(kendalltau_corr, dtype=bool))
+
+  fig, ax = plt.subplots(figsize=(16, 10))
+
+  sns.heatmap(spearmanr_corr, mask=mask_spearman, ax=ax, cmap='Blues', annot=True, cbar=False, annot_kws={'size': annot_size}, fmt='.2f')
+  sns.heatmap(kendalltau_corr, mask=mask_kendall, ax=ax, cmap='Reds', annot=True, cbar=False, annot_kws={'size': annot_size}, fmt='.2f')
+
+  xticklabels = [r'$' + label.get_text() + r'$' for label in ax.get_xticklabels()]
+  yticklabels = [r'$' + label.get_text() + r'$' for label in ax.get_yticklabels()]
+  ax.set_xticklabels(xticklabels, rotation=0, fontsize=label_size)
+  ax.set_yticklabels(yticklabels, fontsize=label_size)
+
+  cbar1 = ax.figure.colorbar(ax.collections[0], ax=ax, location="left", pad=0.1)
+  cbar1.set_label('Spearman Rank Correlation', fontsize=title_size, labelpad=40)
+  cbar1.ax.tick_params(labelsize=cbar_size)
+
+  cbar2 = ax.figure.colorbar(ax.collections[1], ax=ax, location="right", pad=0.1)
+  cbar2.set_label('Kendall Rank Correlation', fontsize=title_size, labelpad=40)
+  cbar2.ax.tick_params(labelsize=cbar_size)
+
+  plt.tight_layout()
+  # plt.show()
+
+  source_dir = os.path.dirname(os.path.abspath(__file__))
+  save_dir = os.path.join(source_dir, 'figures')
+  plt.savefig(os.path.join(save_dir, f'correlation.svg'), bbox_inches='tight')
+
+
 
 if __name__ == '__main__':
   # demo_draw_snr_db()
   # demo_draw_ablation()
   # demo_draw_amplitude_and_psd()
-  demo_draw_contaminate_and_clean()
+  # demo_draw_contaminate_and_clean()
+  demo_draw_rank_correlation()
+
 
   # demo_calculate_average_metric()
   # demo_get_average_metric_in_snr()
