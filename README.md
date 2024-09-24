@@ -9,7 +9,8 @@ The following setup has been used to reproduce this work:
 - Matplotlib == 3.7.3
 - Numpy == 1.24.4
 - Scipy == 1.10.1
-All the specific required packages are in the install.txt above
+
+All the specific required packages are in the `install.txt` above
 ## Prepare Dataset
 
 
