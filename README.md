@@ -70,7 +70,9 @@ cd MSTP-Net
 python main_train.py -c path_to_config
 ```
 
-Make sure that in the config file: mode: ‘train’. Or we can add -m train to the end of the above instruction.
+Make sure that in the `config` file: 
+
+1. `mode: ‘train’`. Or we can add -m train to the end of the above instruction.
 
 ## Evaluation
 
@@ -82,8 +84,8 @@ python main_train.py -c path_to_config
 
 Make sure that in the config file:
 
-1. mode: ‘eval’. Or we can add -m eval to the end of the above instruction.
-2. model_name is the model you want to use.
-3. evaluation.model_path is the path of the ckpt file, and preferably an absolute path.
+1. `mode: ‘eval’`. Or we can add `-m eval` to the end of the above instruction.
+2. `model_name` is the model you want to use.
+3. `evaluation.model_path` is the path of the ckpt file, and preferably an absolute path.
 
 The pre-trained models corresponding to the four artifacts are available [here.](https://gin.g-node.org/gordon-won/MSTP-Net_pre-trained_model)
