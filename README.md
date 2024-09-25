@@ -28,7 +28,7 @@ The SS2016 dataset is from article [EEGDiR: Electroencephalogram denoising netwo
 
 Any information about data processing can be viewed in the `get_datasets` function in the `eeg_set.py` file above.
 
-The processed data can be viewed [here](https://gin.g-node.org/gordon-won/MSTP-Net_pre-trained_model/). There are 12 files in total, 6 for EEGDenoiseNet dataset and 6 for SS2016 dataset. These 12 files are placed under the `data` folder.
+The processed data can be viewed [here](https://gin.g-node.org/gordon-won/MSTP-Net_pre-trained_model/), under the `processed_data` folder. There are 12 files in total, 6 for EEGDenoiseNet dataset and 6 for SS2016 dataset. These 12 files are placed under the `data` folder.
 
 The file structure is as follows:
 
