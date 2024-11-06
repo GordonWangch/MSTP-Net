@@ -81,6 +81,42 @@ Make sure that in the config file:
 3. `evaluation.model_path` is the path of the ckpt file, and preferably an absolute path.
 
 The pre-trained models corresponding to the four artifacts are available [here.](https://gin.g-node.org/gordon-won/MSTP-Net_pre-trained_model)
+
+## Downstream experiment
+---
+1. Get raw data and run classification task with raw data
+    
+    ```powershell
+    python ERP.py
+    ```
+    
+    Make sure that in the ERP.py file: 
+    
+    1. `DATA_DENOISE` is False
+    2. `SAVE_RAW_FILE` is True.
+2. Denoise the raw data with model trained on SS2016 dataset
+    
+    ```powershell
+    python eval-bci.py
+    ```
+    
+    Make sure that in the `eval-bci.py` file: 
+    
+    1. `config_path` is the path to `cfg-2024-07-08-Semi.yml`
+    
+    Make sure that in the `cfg-2024-07-08-Semi.yml` file:
+    
+    1. `evaluation.model_path` is the path of the ckpt file, and preferably an absolute path. The pre-trained demo model is available in [SS2016-EOG](https://gin.g-node.org/gordon-won/MSTP-Net_pre-trained_model/) directory.
+3. Run classification task with denoised data
+    
+    ```powershell
+    python ERP.py
+    ```
+    
+    Make sure that in the ERP.py file: 
+    
+    1. `DATA_DENOISE` is True
+
 ## Reference
 ---
-[Conv-TasNet code](https://github.com/JusperLee/Conv-TasNet) && [Dual-RNN code](https://github.com/JusperLee/Dual-Path-RNN-Pytorch)
+[Conv-TasNet code](https://github.com/JusperLee/Conv-TasNet) && [Dual-RNN code](https://github.com/JusperLee/Dual-Path-RNN-Pytorch) && [EEGNet code](https://github.com/vlawhern/arl-eegmodels/)
