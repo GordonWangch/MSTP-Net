@@ -113,3 +113,20 @@ The pre-trained models corresponding to the four artifacts are available [here.]
 
 ## Reference
 [Conv-TasNet code](https://github.com/JusperLee/Conv-TasNet) && [Dual-RNN code](https://github.com/JusperLee/Dual-Path-RNN-Pytorch) && [EEGNet code](https://github.com/vlawhern/arl-eegmodels/)
+
+If you find this repo helpful, please consider citing:
+```
+@article{Wang2026,
+  title = {EEG noise reduction based on the Multi-Scale Temporal Propagation Network},
+  volume = {113},
+  ISSN = {1746-8094},
+  url = {http://dx.doi.org/10.1016/j.bspc.2025.108804},
+  DOI = {10.1016/j.bspc.2025.108804},
+  journal = {Biomedical Signal Processing and Control},
+  publisher = {Elsevier BV},
+  author = {Wang,  Chenhao and Luo,  Wei and Pei,  Yan and Shen,  Jiale and Ding,  Liya and Yu,  Feng},
+  year = {2026},
+  month = mar,
+  pages = {108804}
+}
+```
