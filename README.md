@@ -1,7 +1,5 @@
 # EEG Noise Reduction Based on the Multi-Scale Temporal Propagation Network
---
 ## Environment and Install
----
 The following setup has been used to reproduce this work:
 
 - CUDA toolkit 11.3.1 and CuDNN 8.2.1
